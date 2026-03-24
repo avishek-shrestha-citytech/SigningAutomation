@@ -50,6 +50,7 @@
     const REPO_OWNER = "avishek-shrestha-citytech";
     const REPO_NAME = "SigningAutomation";
     const WORKFLOW_FILE = "sign.yml";
+    const WORKER_URL = "https://apk-upload-proxy.abhishrestha987.workers.dev";
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -84,17 +85,15 @@
           { tag_name: `signing-${Date.now()}`, name: 'Signing Job', draft: true }
         );
 
-        showStatus('<span class="spinner"></span> Uploading APK (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)...');
+        if (!release.id) throw new Error('Failed to create release: ' + JSON.stringify(release));
 
-        // 2. Upload APK as release asset
+        showStatus(`<span class="spinner"></span> Uploading APK (${(file.size / 1024 / 1024).toFixed(1)} MB)...`);
+
+        // 2. Upload APK via Cloudflare Worker proxy
         const asset = await fetch(
-          `https://uploads.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${release.id}/assets?name=${encodeURIComponent(file.name)}`,
+          `${WORKER_URL}?release_id=${release.id}&file_name=${encodeURIComponent(file.name)}`,
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${GITHUB_TOKEN}`,
-              'Content-Type': 'application/vnd.android.package-archive'
-            },
             body: file
           }
         ).then(r => r.json());
@@ -157,7 +156,7 @@
               resolve();
             }
           } catch (e) {
-            // keep polling, transient error
+            // keep polling
           }
         }, 3000);
       });
