@@ -46,11 +46,7 @@
   </div>
 
   <script>
-    const GITHUB_TOKEN = "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";
-    const REPO_OWNER = "avishek-shrestha-citytech";
-    const REPO_NAME = "SigningAutomation";
-    const WORKFLOW_FILE = "sign.yml";
-    const WORKER_URL = "https://apk-upload-proxy.abhishrestha987.workers.dev";
+    const WORKER_URL = 'https://apk-upload-proxy.abhishrestha987.workers.dev';
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -79,42 +75,35 @@
         showStatus('<span class="spinner"></span> Creating release...');
 
         // 1. Create draft release
-        const release = await ghFetch(
-          `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`,
-          'POST',
+        const release = await workerFetch('create-release', 'POST',
           { tag_name: `signing-${Date.now()}`, name: 'Signing Job', draft: true }
         );
-
         if (!release.id) throw new Error('Failed to create release: ' + JSON.stringify(release));
 
         showStatus(`<span class="spinner"></span> Uploading APK (${(file.size / 1024 / 1024).toFixed(1)} MB)...`);
 
-        // 2. Upload APK via Cloudflare Worker proxy
+        // 2. Upload APK via Worker
         const asset = await fetch(
           `${WORKER_URL}?release_id=${release.id}&file_name=${encodeURIComponent(file.name)}`,
           {
             method: 'POST',
+            headers: { 'X-Action': 'upload-asset' },
             body: file
           }
         ).then(r => r.json());
-
         if (!asset.id) throw new Error('Asset upload failed: ' + JSON.stringify(asset));
 
         showStatus('<span class="spinner"></span> Triggering signing workflow...');
 
         // 3. Trigger workflow
-        await ghFetch(
-          `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
-          'POST',
-          {
-            ref: 'main',
-            inputs: {
-              apk_url: asset.url,
-              file_name: file.name,
-              release_id: String(release.id)
-            }
+        await workerFetch('trigger-workflow', 'POST', {
+          ref: 'main',
+          inputs: {
+            apk_url: asset.url,
+            file_name: file.name,
+            release_id: String(release.id)
           }
-        );
+        });
 
         showStatus('<span class="spinner"></span> Signing in progress — this takes ~60 seconds...');
 
@@ -134,18 +123,13 @@
       return new Promise((resolve, reject) => {
         const interval = setInterval(async () => {
           attempts++;
-
           if (attempts > maxAttempts) {
             clearInterval(interval);
             reject(new Error('Timed out after 3 minutes. Check GitHub Actions for errors.'));
             return;
           }
-
           try {
-            const assets = await ghFetch(
-              `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets`
-            );
-
+            const assets = await workerFetch(`poll-assets&release_id=${releaseId}`, 'GET');
             const signed = assets.find(a => a.name === signedName);
             if (signed) {
               clearInterval(interval);
@@ -155,24 +139,18 @@
               downloadBtn.classList.add('visible');
               resolve();
             }
-          } catch (e) {
-            // keep polling
-          }
+          } catch (e) { /* keep polling */ }
         }, 3000);
       });
     }
 
-    function ghFetch(url, method = 'GET', body = null) {
+    function workerFetch(action, method = 'GET', body = null) {
       const opts = {
         method,
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/vnd.github+json'
-        }
+        headers: { 'X-Action': action, 'Content-Type': 'application/json' }
       };
       if (body) opts.body = JSON.stringify(body);
-      return fetch(url, opts).then(r => r.json());
+      return fetch(WORKER_URL, opts).then(r => r.json());
     }
 
     function showStatus(msg) {
