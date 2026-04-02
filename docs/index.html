@@ -230,15 +230,23 @@
     .progress-fill {
       height: 100%;
       background: linear-gradient(90deg, #0369a1, #0284c7);
-      animation: progress 2s ease-in-out infinite;
-      width: 30%;
+      width: 0%;
       border-radius: 4px;
       box-shadow: 0 0 10px rgba(3, 105, 161, 0.5);
+      transition: width 0.3s ease;
     }
 
-    @keyframes progress {
-      0%, 100% { width: 30%; }
-      50% { width: 70%; }
+    .progress-text {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #0369a1;
+      font-weight: 600;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .progress-text.visible {
+      display: block;
     }
 
     .status {
@@ -433,6 +441,8 @@
           <div class="progress-fill"></div>
         </div>
 
+        <div class="progress-text" id="progressText">0%</div>
+
         <div class="status" id="status"></div>
 
         <a class="download-btn" id="downloadBtn" href="#" download>
@@ -454,6 +464,8 @@
     const status = document.getElementById('status');
     const downloadBtn = document.getElementById('downloadBtn');
     const progressBar = document.getElementById('progressBar');
+    const progressFill = progressBar.querySelector('.progress-fill');
+    const progressText = document.getElementById('progressText');
     const fileInfo = document.getElementById('fileInfo');
 
     dropZone.addEventListener('click', () => fileInput.click());
@@ -478,6 +490,9 @@
 
       downloadBtn.classList.remove('visible');
       progressBar.classList.add('visible');
+      progressText.classList.add('visible');
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
 
       try {
         showStatus('Creating release...', 'loading');
@@ -489,14 +504,10 @@
 
         showStatus(`Uploading APK (${fileSizeMB} MB)...`, 'loading');
 
-        const asset = await fetch(
+        const asset = await uploadWithProgress(
           `${WORKER_URL}?release_id=${release.id}&file_name=${encodeURIComponent(file.name)}`,
-          {
-            method: 'POST',
-            headers: { 'X-Action': 'upload-asset' },
-            body: file
-          }
-        ).then(r => r.json());
+          file
+        );
         if (!asset.id) throw new Error('Asset upload failed: ' + JSON.stringify(asset));
 
         showStatus('Triggering signing workflow...', 'loading');
@@ -510,12 +521,13 @@
           }
         });
 
-        showStatus('Signing in progress — this takes ~60 seconds...', 'loading');
+        showStatus('Signing in progress...', 'loading');
 
         await pollForResult(release.id, file.name);
 
       } catch (err) {
         progressBar.classList.remove('visible');
+        progressText.classList.remove('visible');
         showStatus(err.message, 'error');
       }
     }
@@ -531,6 +543,7 @@
           if (attempts > maxAttempts) {
             clearInterval(interval);
             progressBar.classList.remove('visible');
+            progressText.classList.remove('visible');
             reject(new Error('Timed out after 2 minutes. Check GitHub Actions for errors.'));
             return;
           }
@@ -540,6 +553,7 @@
             if (signed) {
               clearInterval(interval);
               progressBar.classList.remove('visible');
+              progressText.classList.remove('visible');
               showStatus('Signing complete! Ready to download.', 'success');
               downloadBtn.href = signed.browser_download_url;
               downloadBtn.download = signedName;
@@ -558,6 +572,39 @@
       };
       if (body) opts.body = JSON.stringify(body);
       return fetch(WORKER_URL, opts).then(r => r.json());
+    }
+
+    function uploadWithProgress(url, file) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            progressFill.style.width = progress + '%';
+            progressText.textContent = progress + '%';
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch (e) {
+              reject(new Error('Failed to parse upload response'));
+            }
+          } else {
+            reject(new Error('Upload failed with status ' + xhr.status));
+          }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Upload error')));
+        xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+
+        xhr.open('POST', url);
+        xhr.setRequestHeader('X-Action', 'upload-asset');
+        xhr.send(file);
+      });
     }
 
     function showStatus(msg, type = 'loading') {
