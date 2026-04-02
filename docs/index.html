@@ -6,43 +6,284 @@
   <title>APK Signer</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: sans-serif; background: #0d1117; color: #e6edf3;
-           display: flex; justify-content: center; align-items: center;
-           min-height: 100vh; }
-    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-            padding: 40px; width: 100%; max-width: 500px; text-align: center; }
-    h1 { font-size: 1.5rem; margin-bottom: 8px; }
-    p { color: #8b949e; margin-bottom: 24px; }
-    .drop-zone { border: 2px dashed #30363d; border-radius: 8px; padding: 48px 24px;
-                 cursor: pointer; transition: all 0.2s; }
-    .drop-zone.dragover { border-color: #58a6ff; background: #1f2937; }
-    .drop-zone input { display: none; }
-    .status { margin-top: 24px; padding: 16px; border-radius: 8px;
-              background: #1f2937; display: none; }
-    .status.visible { display: block; }
-    .download-btn { margin-top: 16px; padding: 12px 24px; background: #238636;
-                    color: white; border-radius: 6px; text-decoration: none;
-                    font-weight: 600; display: none; }
-    .download-btn.visible { display: inline-block; }
-    .spinner { display: inline-block; width: 16px; height: 16px;
-               border: 2px solid #58a6ff; border-top-color: transparent;
-               border-radius: 50%; animation: spin 0.8s linear infinite;
-               vertical-align: middle; margin-right: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .header {
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      font-weight: 400;
+      margin: 0;
+    }
+
+    .drop-zone {
+      border: 2px dashed rgba(148, 163, 184, 0.4);
+      border-radius: 12px;
+      padding: 56px 32px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(30, 41, 59, 0.5);
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .drop-zone:hover {
+      border-color: rgba(148, 163, 184, 0.6);
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .drop-zone.dragover {
+      border-color: #60a5fa;
+      background: rgba(96, 165, 250, 0.1);
+      transform: scale(1.02);
+    }
+
+    .drop-zone input {
+      display: none;
+    }
+
+    .drop-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: block;
+      transition: transform 0.2s;
+    }
+
+    .drop-zone:hover .drop-icon {
+      transform: scale(1.1);
+    }
+
+    .drop-text {
+      color: #cbd5e1;
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .drop-hint {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .file-info {
+      display: none;
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(96, 165, 250, 0.1);
+      border-radius: 8px;
+      color: #93c5fd;
+      font-size: 0.9rem;
+    }
+
+    .file-info.visible {
+      display: block;
+    }
+
+    .status {
+      margin-bottom: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      background: rgba(30, 41, 59, 0.8);
+      display: none;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      animation: slideIn 0.3s ease;
+    }
+
+    .status.visible {
+      display: flex;
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status.success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .progress-bar.visible {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #60a5fa, #3b82f6);
+      animation: progress 2s ease-in-out infinite;
+      width: 30%;
+    }
+
+    @keyframes progress {
+      0%, 100% { width: 30%; }
+      50% { width: 70%; }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(96, 165, 250, 0.3);
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .download-btn {
+      display: none;
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .download-btn.visible {
+      display: block;
+    }
+
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 32px 24px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .drop-zone {
+        padding: 40px 24px;
+      }
+
+      .header {
+        margin-bottom: 32px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>⚙️ APK Signer</h1>
-    <p>Drop your APK below to sign it</p>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>APK Signer</h1>
+        <p class="subtitle">Sign your Android APKs instantly</p>
+      </div>
 
-    <div class="drop-zone" id="dropZone">
-      <input type="file" id="fileInput" accept=".apk">
-      <div id="dropText">📦 Drag & drop your APK here<br><small>or click to browse</small></div>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".apk">
+        <span class="drop-icon">📦</span>
+        <div class="drop-text">Drag & drop your APK here</div>
+        <p class="drop-hint">or click to browse</p>
+        <div class="file-info" id="fileInfo"></div>
+      </div>
+
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill"></div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <button class="download-btn" id="downloadBtn">
+        ⬇️ Download Signed APK
+      </button>
+
+      <div class="footer">
+        <p>Securely signed using your signing key</p>
+      </div>
     </div>
-
-    <div class="status" id="status"></div>
-    <a class="download-btn" id="downloadBtn">⬇️ Download Signed APK</a>
   </div>
 
   <script>
@@ -51,7 +292,10 @@
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const status = document.getElementById('status');
+    const statusDiv = document.getElementById('status');
     const downloadBtn = document.getElementById('downloadBtn');
+    const progressBar = document.getElementById('progressBar');
+    const fileInfo = document.getElementById('fileInfo');
 
     dropZone.addEventListener('click', () => fileInput.click());
     dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -65,14 +309,19 @@
 
     async function handleFile(file) {
       if (!file || !file.name.endsWith('.apk')) {
-        showStatus('❌ Please select a valid .apk file');
+        showStatus('Please select a valid APK file', 'error');
         return;
       }
 
+      const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+      fileInfo.textContent = `${file.name} (${fileSizeMB} MB)`;
+      fileInfo.classList.add('visible');
+
       downloadBtn.classList.remove('visible');
+      progressBar.classList.add('visible');
 
       try {
-        showStatus('<span class="spinner"></span> Creating release...');
+        showStatus('Creating release...', 'loading');
 
         // 1. Create draft release
         const release = await workerFetch('create-release', 'POST',
@@ -80,7 +329,7 @@
         );
         if (!release.id) throw new Error('Failed to create release: ' + JSON.stringify(release));
 
-        showStatus(`<span class="spinner"></span> Uploading APK (${(file.size / 1024 / 1024).toFixed(1)} MB)...`);
+        showStatus(`Uploading APK (${fileSizeMB} MB)...`, 'loading');
 
         // 2. Upload APK via Worker
         const asset = await fetch(
@@ -93,7 +342,7 @@
         ).then(r => r.json());
         if (!asset.id) throw new Error('Asset upload failed: ' + JSON.stringify(asset));
 
-        showStatus('<span class="spinner"></span> Triggering signing workflow...');
+        showStatus('Triggering signing workflow...', 'loading');
 
         // 3. Trigger workflow
         await workerFetch('trigger-workflow', 'POST', {
@@ -105,13 +354,14 @@
           }
         });
 
-        showStatus('<span class="spinner"></span> Signing in progress — this takes ~60 seconds...');
+        showStatus('Signing in progress — this takes ~60 seconds...', 'loading');
 
         // 4. Poll for signed APK
         await pollForResult(release.id, file.name);
 
       } catch (err) {
-        showStatus('❌ Error: ' + err.message);
+        progressBar.classList.remove('visible');
+        showStatus(err.message, 'error');
       }
     }
 
@@ -125,6 +375,7 @@
           attempts++;
           if (attempts > maxAttempts) {
             clearInterval(interval);
+            progressBar.classList.remove('visible');
             reject(new Error('Timed out after 3 minutes. Check GitHub Actions for errors.'));
             return;
           }
@@ -133,7 +384,8 @@
             const signed = assets.find(a => a.name === signedName);
             if (signed) {
               clearInterval(interval);
-              showStatus('✅ Signing complete!');
+              progressBar.classList.remove('visible');
+              showStatus('Signing complete! Ready to download.', 'success');
               downloadBtn.href = signed.browser_download_url;
               downloadBtn.download = signedName;
               downloadBtn.classList.add('visible');
@@ -153,9 +405,18 @@
       return fetch(WORKER_URL, opts).then(r => r.json());
     }
 
-    function showStatus(msg) {
-      status.innerHTML = msg;
-      status.className = 'status visible';
+    function showStatus(msg, type = 'loading') {
+      let icon = '';
+      if (type === 'loading') {
+        icon = '<span class="spinner"></span>';
+      } else if (type === 'error') {
+        icon = '⚠️';
+      } else if (type === 'success') {
+        icon = '✅';
+      }
+
+      status.innerHTML = icon + (icon ? '' : '') + msg;
+      status.className = `status visible ${type}`;
     }
   </script>
 </body>
