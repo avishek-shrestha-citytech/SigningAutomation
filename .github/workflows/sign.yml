@@ -37,7 +37,7 @@ jobs:
 
       - name: ✍️ Sign APK
         run: |
-          sudo apt-get update && sudo apt-get install -y apksigner
+          which apksigner > /dev/null || (sudo apt-get update && sudo apt-get install -y apksigner)
 
           CLEAN_NAME=$(echo "${{ github.event.inputs.file_name }}" | sed 's/^processing_//')
           SIGNED_NAME="${CLEAN_NAME%.apk}_signed.apk"
