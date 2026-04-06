@@ -21,6 +21,12 @@ jobs:
     steps:
       - name: 📥 Download APK from Release
         run: |
+          # Validate URL is from GitHub releases API only
+          if ! echo "${{ github.event.inputs.apk_url }}" | grep -qE "^https://api\.github\.com/repos/avishek-shrestha-citytech/SigningAutomation/releases/assets/[0-9]+$"; then
+            echo "❌ Invalid APK URL - must be from GitHub releases"
+            exit 1
+          fi
+
           curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/octet-stream" \
             "${{ github.event.inputs.apk_url }}" -o input.apk
@@ -39,7 +45,8 @@ jobs:
         run: |
           which apksigner > /dev/null || (sudo apt-get update && sudo apt-get install -y apksigner)
 
-          CLEAN_NAME=$(echo "${{ github.event.inputs.file_name }}" | sed 's/^processing_//')
+          # Use environment variable to avoid shell injection
+          CLEAN_NAME=$(printf '%s\n' "$FILE_NAME" | sed 's/^processing_//')
           SIGNED_NAME="${CLEAN_NAME%.apk}_signed.apk"
 
           apksigner sign --key citytech.pk8 --cert citytech.x509.pem \
@@ -47,10 +54,16 @@ jobs:
           apksigner verify "$SIGNED_NAME"
 
           echo "SIGNED_NAME=$SIGNED_NAME" >> $GITHUB_ENV
+        env:
+          FILE_NAME: ${{ github.event.inputs.file_name }}
 
       - name: 🧹 Shred Keys
         if: always()
-        run: shred -u citytech.pk8 citytech.x509.pem
+        run: |
+          # Shred keys from memory. Note: GitHub Actions runners are ephemeral VMs destroyed after each job,
+          # so the actual security comes from VM destruction, not shred. However, shred is a defense-in-depth measure
+          # in case the runner environment changes in the future.
+          shred -u citytech.pk8 citytech.x509.pem
 
       - name: 📤 Upload Signed APK to Release
         run: |

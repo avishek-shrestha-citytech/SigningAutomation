@@ -1,0 +1,36 @@
+name: Cleanup Old Releases
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 🗑️ Delete draft releases older than 24 hours
+        run: |
+          # Get all draft releases
+          RELEASES=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases")
+
+          # Filter and delete drafts older than 24 hours
+          CUTOFF_TIME=$(date -d "24 hours ago" -u +%Y-%m-%dT%H:%M:%SZ)
+
+          echo "$RELEASES" | jq -r ".[] | select(.draft==true) | select(.created_at < \"$CUTOFF_TIME\") | .id" | while read RELEASE_ID; do
+            if [ ! -z "$RELEASE_ID" ]; then
+              echo "Deleting old draft release ID: $RELEASE_ID"
+              curl -s -X DELETE \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+              echo "Deleted release $RELEASE_ID"
+            fi
+          done
+
+          echo "✅ Cleanup complete"

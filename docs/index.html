@@ -484,6 +484,14 @@
         return;
       }
 
+      // Validate magic bytes (ZIP signature: PK\x03\x04)
+      const headerBuf = await file.slice(0, 4).arrayBuffer();
+      const headerView = new Uint8Array(headerBuf);
+      if (headerView.length < 4 || headerView[0] !== 0x50 || headerView[1] !== 0x4B || headerView[2] !== 0x03 || headerView[3] !== 0x04) {
+        showStatus('File does not appear to be a valid APK (invalid ZIP signature)', 'error');
+        return;
+      }
+
       const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
       fileInfo.textContent = `${file.name} (${fileSizeMB} MB)`;
       fileInfo.classList.add('visible');
@@ -608,16 +616,21 @@
     }
 
     function showStatus(msg, type = 'loading') {
+      status.innerHTML = ''; // Clear previous content
+
       let icon = '';
       if (type === 'loading') {
-        icon = '<span class="spinner"></span>';
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner';
+        status.appendChild(spinner);
       } else if (type === 'error') {
         icon = '⚠️';
       } else if (type === 'success') {
         icon = '✅';
       }
 
-      status.innerHTML = (icon ? icon + ' ' : '') + msg;
+      const textNode = document.createTextNode((icon ? icon + ' ' : '') + msg);
+      status.appendChild(textNode);
       status.className = `status visible ${type}`;
     }
   </script>
