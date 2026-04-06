@@ -555,8 +555,8 @@
               progressBar.classList.remove('visible');
               progressText.classList.remove('visible');
               showStatus('Signing complete! Ready to download.', 'success');
-              downloadBtn.href = signed.browser_download_url;
-              downloadBtn.download = signedName;
+              downloadBtn.href = `${WORKER_URL}?action=download-asset&asset_url=${encodeURIComponent(signed.url)}`;
+              downloadBtn.target = '_blank';
               downloadBtn.classList.add('visible');
               resolve();
             }
