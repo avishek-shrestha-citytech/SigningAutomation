@@ -27,24 +27,30 @@ jobs:
       - name: 📥 Download APK from Release
         run: |
           # Validate URL is from GitHub releases API only
-          if ! echo "${{ github.event.inputs.apk_url }}" | grep -qE "^https://api\.github\.com/repos/avishek-shrestha-citytech/SigningAutomation/releases/assets/[0-9]+$"; then
+          if ! echo "$APK_URL" | grep -qE "^https://api\.github\.com/repos/avishek-shrestha-citytech/SigningAutomation/releases/assets/[0-9]+$"; then
             echo "❌ Invalid APK URL - must be from GitHub releases"
             exit 1
           fi
 
-          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          curl -L -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/octet-stream" \
-            "${{ github.event.inputs.apk_url }}" -o input.apk
+            "$APK_URL" -o input.apk
 
           if [ $(stat -c%s "input.apk") -lt 10000 ]; then
             echo "❌ Download failed or file too small"
             exit 1
           fi
+        env:
+          APK_URL: ${{ github.event.inputs.apk_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🔑 Decode Signing Keys
         run: |
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > citytech.pk8
-          echo "${{ secrets.SIGNING_CERT }}" | base64 -d > citytech.x509.pem
+          echo "$SIGNING_KEY" | base64 -d > citytech.pk8
+          echo "$SIGNING_CERT" | base64 -d > citytech.x509.pem
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
 
       - name: ✍️ Sign APK
         run: |
@@ -66,7 +72,11 @@ jobs:
         run: |
           curl -L \
             -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary @"${{ env.SIGNED_NAME }}" \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.inputs.release_id }}/assets?name=${{ env.SIGNED_NAME }}"
+            --data-binary @"$SIGNED_NAME" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$SIGNED_NAME"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ github.event.inputs.release_id }}
+          SIGNED_NAME: ${{ env.SIGNED_NAME }}
