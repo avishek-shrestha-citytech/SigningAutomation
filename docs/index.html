@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>citytech APK Signing Service</title>
+  <title>Citytech APK Signing Service</title>
   <link rel="icon" type="image/x-icon" href="CityTech.ico">
   <style>
     * {
@@ -327,6 +327,18 @@
       font-size: 1.1rem;
     }
 
+    .step.error {
+      color: #ef4444;
+    }
+
+    .step.error .step-icon {
+      border-color: #ef4444;
+      background: #fee2e2;
+      color: #ef4444;
+      font-size: 1.1rem;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+
     .spinner-small {
       display: inline-block;
       width: 14px;
@@ -511,7 +523,7 @@
       <div class="logo-section">
         <img src="CityTech.ico" alt="CityTech" class="logo-img">
         <div class="logo-text">
-          <h2>CityTech</h2>
+          <h2>Citytech</h2>
           <p>APK Signing Service</p>
         </div>
       </div>
@@ -586,6 +598,9 @@
       for (let i = 1; i <= 4; i++) {
         const stepEl = document.getElementById(`step${i}`);
         const iconEl = stepEl.querySelector('.step-icon');
+        // Clear any previous error state
+        stepEl.classList.remove('error');
+        
         if (i < stepNumber) {
           stepEl.className = 'step completed';
           iconEl.innerHTML = '✓';
@@ -596,6 +611,14 @@
           stepEl.className = 'step';
           iconEl.innerHTML = i;
         }
+      }
+    }
+
+    function setStepError() {
+      const activeStep = document.querySelector('.step.active');
+      if (activeStep) {
+        activeStep.className = 'step error';
+        activeStep.querySelector('.step-icon').innerHTML = '✗';
       }
     }
 
@@ -674,6 +697,7 @@
       } catch (err) {
         progressBar.classList.remove('visible');
         progressText.classList.remove('visible');
+        setStepError();
         showStatus(err.message, 'error');
       }
     }
@@ -700,9 +724,9 @@
               clearInterval(interval);
               progressBar.classList.remove('visible');
               progressText.classList.remove('visible');
-              setStep(4);
+              setStep(5); // 5 puts checkmarks on all 4 steps
               showStatus('Signing complete! Ready to download.', 'success');
-              downloadBtn.href = `${WORKER_URL}?action=download-asset&asset_url=${encodeURIComponent(signed.url)}`;
+              downloadBtn.href = `${WORKER_URL}?action=download-asset&asset_url=${encodeURIComponent(signed.url)}&download_name=${encodeURIComponent(signedName)}`;
               downloadBtn.target = '_blank';
               downloadBtn.classList.add('visible');
               resolve();
