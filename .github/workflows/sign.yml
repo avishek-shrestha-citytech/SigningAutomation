@@ -19,6 +19,9 @@ jobs:
       contents: write
 
     steps:
+      - name: 📦 Checkout Repo
+        uses: actions/checkout@v4
+
       - name: 📥 Download APK from Release
         run: |
           # Validate URL is from GitHub releases API only
@@ -43,15 +46,10 @@ jobs:
 
       - name: ✍️ Sign APK
         run: |
-          which apksigner > /dev/null || (sudo apt-get update && sudo apt-get install -y apksigner)
-
-          # Use environment variable to avoid shell injection
           CLEAN_NAME=$(printf '%s\n' "$FILE_NAME" | sed 's/^processing_//')
           SIGNED_NAME="${CLEAN_NAME%.apk}_signed.apk"
 
-          apksigner sign --key citytech.pk8 --cert citytech.x509.pem \
-            --out "$SIGNED_NAME" input.apk
-          apksigner verify "$SIGNED_NAME"
+          java -jar signapk.jar citytech.x509.pem citytech.pk8 input.apk "$SIGNED_NAME"
 
           echo "SIGNED_NAME=$SIGNED_NAME" >> $GITHUB_ENV
         env:
@@ -60,10 +58,7 @@ jobs:
       - name: 🧹 Shred Keys
         if: always()
         run: |
-          # Shred keys from memory. Note: GitHub Actions runners are ephemeral VMs destroyed after each job,
-          # so the actual security comes from VM destruction, not shred. However, shred is a defense-in-depth measure
-          # in case the runner environment changes in the future.
-          shred -u citytech.pk8 citytech.x509.pem
+          shred -u citytech.pk8 citytech.x509.pem 2>/dev/null || true
 
       - name: 📤 Upload Signed APK to Release
         run: |
