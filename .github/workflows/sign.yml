@@ -46,8 +46,8 @@ jobs:
 
       - name: 🔑 Decode Signing Keys
         run: |
-          echo "$SIGNING_KEY" | base64 -d > citytech.pk8
-          echo "$SIGNING_CERT" | base64 -d > citytech.x509.pem
+          echo "$SIGNING_KEY" | base64 -d > /dev/shm/citytech.pk8
+          echo "$SIGNING_CERT" | base64 -d > /dev/shm/citytech.x509.pem
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
@@ -57,7 +57,7 @@ jobs:
           CLEAN_NAME=$(printf '%s\n' "$FILE_NAME" | sed 's/^processing_//')
           SIGNED_NAME="${CLEAN_NAME%.apk}_signed.apk"
 
-          java -jar signapk.jar citytech.x509.pem citytech.pk8 input.apk "$SIGNED_NAME"
+          java -jar signapk.jar /dev/shm/citytech.x509.pem /dev/shm/citytech.pk8 input.apk "$SIGNED_NAME"
 
           echo "SIGNED_NAME=$SIGNED_NAME" >> $GITHUB_ENV
         env:
@@ -66,7 +66,7 @@ jobs:
       - name: 🧹 Shred Keys
         if: always()
         run: |
-          shred -u citytech.pk8 citytech.x509.pem 2>/dev/null || true
+          shred -u /dev/shm/citytech.pk8 /dev/shm/citytech.x509.pem 2>/dev/null || true
 
       - name: 📤 Upload Signed APK to Release
         run: |
