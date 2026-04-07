@@ -726,7 +726,7 @@
               progressText.classList.remove('visible');
               setStep(5); // 5 puts checkmarks on all 4 steps
               showStatus('Signing complete! Ready to download.', 'success');
-              downloadBtn.href = `${WORKER_URL}?action=download-asset&asset_url=${encodeURIComponent(signed.url)}&download_name=${encodeURIComponent(signedName)}`;
+              downloadBtn.href = signed.browser_download_url;
               downloadBtn.target = '_blank';
               downloadBtn.classList.add('visible');
               resolve();
