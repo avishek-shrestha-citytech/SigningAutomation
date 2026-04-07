@@ -813,9 +813,9 @@
 
           <div class="status" id="status"></div>
 
-          <a class="download-btn" id="downloadBtn" href="#" download>
+          <button class="download-btn" id="downloadBtn">
             ⬇️ Download Signed APK
-          </a>
+          </button>
         `;
 
         rightSection.appendChild(card);
@@ -965,8 +965,30 @@
                   progressText.classList.remove('visible');
                   setStep(5);
                   showStatus('Signing complete! Ready to download.', 'success');
-                  downloadBtn.href = WORKER_URL + '?action=download-asset&asset_url=' + encodeURIComponent(signed.url) + '&download_name=' + encodeURIComponent(signedName) + '&passcode=' + encodeURIComponent(_verifiedPasscode);
-                  downloadBtn.target = '_blank';
+
+                  // SECURITY: Download via fetch + Blob so passcode stays in headers only
+                  downloadBtn.onclick = async function() {
+                    downloadBtn.disabled = true;
+                    downloadBtn.textContent = '⏳ Downloading...';
+                    try {
+                      var dlRes = await fetch(WORKER_URL + '?action=download-asset&asset_url=' + encodeURIComponent(signed.url), {
+                        headers: { 'X-Passcode': _verifiedPasscode }
+                      });
+                      if (!dlRes.ok) throw new Error('Download failed');
+                      var blob = await dlRes.blob();
+                      var blobUrl = URL.createObjectURL(blob);
+                      var tempLink = document.createElement('a');
+                      tempLink.href = blobUrl;
+                      tempLink.download = signedName;
+                      tempLink.click();
+                      URL.revokeObjectURL(blobUrl);
+                    } catch (err) {
+                      showStatus('Download failed: ' + err.message, 'error');
+                    }
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = '⬇️ Download Signed APK';
+                  };
+
                   downloadBtn.classList.add('visible');
                   resolve();
                 }
