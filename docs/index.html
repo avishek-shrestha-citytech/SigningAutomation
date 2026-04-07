@@ -514,6 +514,22 @@
         height: 100px;
       }
     }
+    .passcode-input {
+      width: 100%;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      outline: none;
+      transition: all 0.3s;
+      color: #0f172a;
+    }
+
+    .passcode-input:focus {
+      border-color: #0369a1;
+      box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+    }
   </style>
 </head>
 
@@ -534,6 +550,8 @@
         <div class="card-header">
           <h2>Upload APK</h2>
         </div>
+
+        <input type="password" id="passcode" class="passcode-input" placeholder="Enter Organization Passcode">
 
         <div class="drop-zone" id="dropZone">
           <input type="file" id="fileInput" accept=".apk">
@@ -726,7 +744,8 @@
               progressText.classList.remove('visible');
               setStep(5); // 5 puts checkmarks on all 4 steps
               showStatus('Signing complete! Ready to download.', 'success');
-              downloadBtn.href = `${WORKER_URL}?action=download-asset&asset_url=${encodeURIComponent(signed.url)}&download_name=${encodeURIComponent(signedName)}`;
+              const code = document.getElementById('passcode').value || '';
+              downloadBtn.href = `${WORKER_URL}?action=download-asset&asset_url=${encodeURIComponent(signed.url)}&download_name=${encodeURIComponent(signedName)}&passcode=${encodeURIComponent(code)}`;
               downloadBtn.target = '_blank';
               downloadBtn.classList.add('visible');
               resolve();
@@ -737,9 +756,10 @@
     }
 
     function workerFetch(action, method = 'GET', body = null) {
+      const passcode = document.getElementById('passcode').value || '';
       const opts = {
         method,
-        headers: { 'X-Action': action, 'Content-Type': 'application/json' }
+        headers: { 'X-Action': action, 'Content-Type': 'application/json', 'X-Passcode': passcode }
       };
       if (body) opts.body = JSON.stringify(body);
       return fetch(WORKER_URL, opts).then(async r => {
@@ -778,6 +798,8 @@
 
         xhr.open('POST', url);
         xhr.setRequestHeader('X-Action', 'upload-asset');
+        const passcode = document.getElementById('passcode').value || '';
+        if(passcode) xhr.setRequestHeader('X-Passcode', passcode);
         xhr.send(file);
       });
     }
