@@ -24,6 +24,14 @@ jobs:
       - name: 📦 Checkout Repo
         uses: actions/checkout@v4
 
+      - name: 🛡️ Validate Inputs
+        run: |
+          printf '%s' "$FILE_NAME" | grep -qE '^[a-zA-Z0-9._-]+\.apk$' || { echo "❌ Invalid filename"; exit 1; }
+          printf '%s' "$RELEASE_ID" | grep -qE '^[0-9]+$' || { echo "❌ Invalid release ID"; exit 1; }
+        env:
+          FILE_NAME: ${{ github.event.inputs.file_name }}
+          RELEASE_ID: ${{ github.event.inputs.release_id }}
+
       - name: 📥 Download APK from Release
         run: |
           # Validate URL is from GitHub releases API only
