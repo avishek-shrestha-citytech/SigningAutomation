@@ -302,8 +302,8 @@
                 downloadBtn.disabled = true;
                 downloadBtn.textContent = '⏳ Downloading...';
                 try {
-                  var dlRes = await fetch(WORKER_URL + '?action=download-asset&asset_url=' + encodeURIComponent(signed.url), {
-                    headers: { 'X-Passcode': _verifiedPasscode }
+                  var dlRes = await fetch(WORKER_URL + '?asset_url=' + encodeURIComponent(signed.url) + '&download_name=' + encodeURIComponent(signedName), {
+                    headers: { 'X-Action': 'download-asset', 'X-Passcode': _verifiedPasscode }
                   });
                   if (!dlRes.ok) throw new Error('Download failed');
                   var blob = await dlRes.blob();

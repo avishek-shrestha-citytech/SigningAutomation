@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 🛡️ Validate Inputs
         run: |
@@ -59,6 +59,16 @@ jobs:
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
+
+      - name: 🔐 Verify signapk.jar integrity
+        run: |
+          EXPECTED="179fa231a584a0bb394d53156738e3e3b842ef326eb660b80a286f94553ec5be"
+          ACTUAL=$(sha256sum signapk.jar | awk '{print $1}')
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "❌ signapk.jar integrity check FAILED — aborting!"
+            exit 1
+          fi
+          echo "✅ signapk.jar integrity verified"
 
       - name: ✍️ Sign APK
         run: |
