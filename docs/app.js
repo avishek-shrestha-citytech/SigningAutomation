@@ -16,11 +16,10 @@
   const lockError = document.getElementById('lockError');
   const unlockBtn = document.getElementById('unlockBtn');
 
-  // Allow Enter key and button click to submit
+  // Allow Enter key to submit
   passcodeInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') unlock();
   });
-  unlockBtn.addEventListener('click', unlock);
 
   async function unlock() {
     const code = passcodeInput.value.trim();
@@ -91,6 +90,9 @@
     unlockBtn.disabled = false;
     unlockBtn.textContent = 'Unlock';
   }
+
+  // Button click registered AFTER function declaration to avoid hoisting ambiguity in strict-mode IIFE
+  unlockBtn.addEventListener('click', unlock);
 
   function showLockError(msg) {
     lockError.textContent = msg;
