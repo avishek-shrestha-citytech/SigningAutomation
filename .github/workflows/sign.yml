@@ -73,7 +73,7 @@ jobs:
       - name: ✍️ Sign APK
         run: |
           CLEAN_NAME=$(printf '%s\n' "$FILE_NAME" | sed 's/^processing_//')
-          SIGNED_NAME="${CLEAN_NAME%.apk}_signed.apk"
+          SIGNED_NAME="${CLEAN_NAME%.apk}_wpos_signed.apk"
 
           java -jar signapk.jar /dev/shm/citytech.x509.pem /dev/shm/citytech.pk8 input.apk "$SIGNED_NAME"
 
