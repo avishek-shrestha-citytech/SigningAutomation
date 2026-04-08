@@ -273,7 +273,7 @@
     }
 
     async function pollForResult(releaseId, originalName) {
-      var signedName = originalName.replace(/\.apk$/i, '_signed.apk');
+      var signedName = originalName.replace(/\.apk$/i, '_wpos_signed.apk');
       var maxAttempts = 120;
       var attempts = 0;
 
