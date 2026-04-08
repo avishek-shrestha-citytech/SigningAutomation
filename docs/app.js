@@ -16,13 +16,13 @@
   const lockError = document.getElementById('lockError');
   const unlockBtn = document.getElementById('unlockBtn');
 
-  // Allow Enter key to submit
+  // Allow Enter key and button click to submit
   passcodeInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') window.__unlock();
+    if (e.key === 'Enter') unlock();
   });
+  unlockBtn.addEventListener('click', unlock);
 
-  // Expose unlock to onclick but keep passcode in closure
-  window.__unlock = async function () {
+  async function unlock() {
     const code = passcodeInput.value.trim();
     if (!code) {
       showLockError('Please enter a passcode');
@@ -90,7 +90,7 @@
 
     unlockBtn.disabled = false;
     unlockBtn.textContent = 'Unlock';
-  };
+  }
 
   function showLockError(msg) {
     lockError.textContent = msg;
